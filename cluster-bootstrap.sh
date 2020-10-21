@@ -5,6 +5,7 @@
 # Notes: Bootstrap logs are in "/mnt/var/log/bootstrap-actions/1/"
 
 PROFILER_FOLDER=/opt/profiler
+sudo mkdir $PROFILER_FOLDER
 aws s3 cp s3://cluster-bootstrap/cluster-bootstrap.sh $PROFILER_FOLDER
 
 ### Install Uber JVM Profiler on EMR machines (AMI 2)
@@ -12,6 +13,8 @@ aws s3 cp s3://cluster-bootstrap/cluster-bootstrap.sh $PROFILER_FOLDER
 # Install git and maven
 sudo yum -y install git-core
 sudo yum -y install maven
+# Install htop that shows each core's effort
+sudo yum -y install htop
 
 # Clone the profiler and build it
 git clone https://github.com/uber-common/jvm-profiler.git
@@ -20,7 +23,6 @@ cd jvm-profiler/
 mvn -P influxdb clean package
 
 # Copy to the profiler folder and set permissions
-sudo mkdir $PROFILER_FOLDER
 sudo cp target/jvm-profiler-1.0.0.jar /opt/profiler/.
 sudo chown hadoop:hadoop /opt/profiler/ -R
 chmod +x /opt/profiler/jvm-profiler-1.0.0.jar
@@ -43,16 +45,10 @@ echo "  password: admin" >> $PROFILER_CONFIG
 
 ### Install Data Bricks TPC-DS Toolkit
 
-# Install SBT
-curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm.repo
-sudo yum -y install sbt
-
-# Build spark-sql-perf
-git clone https://github.com/databricks/spark-sql-perf ~/databricks-spark-sql-perf
-cd ~/databricks-spark-sql-perf
-# This one takes several minutes, so we might have to build it once and copy it here from s3 in the future
-sudo sbt +package
-# For a future "copy from s3 instead of build": aws s3 cp $PROFILER_FOLDER/spark-sql-perf_*.jar s3://cluster-bootstrap/
+# The script that build the jar is in databricks-sql-perf-install.sh
+# The build takes ~5 minutes, so we better copy from s3 after one-time build
+aws s3 cp s3://cluster-bootstrap/spark-sql-perf_2.12-0.5.1-SNAPSHOT.jar $PROFILER_FOLDER
+for i in `ls -d $PROFILER_FOLDER/spark-sql-perf_*.jar`; do sudo chmod +x $i;done
 
 # Get dsdgen
 # The original dsdgen (from the TPC-DS toolkit) does not work as expected (version 2.4+), because it does not print to stdout. Therefore, it is required to perform the following:
@@ -61,10 +57,6 @@ sudo yum install -y gcc make flex bison byacc git
 git clone https://github.com/databricks/tpcds-kit.git databricks-tpcds-kit
 cd databricks-tpcds-kit/tools
 make clean
-make clean OS=LINUX
-
-# Copy the jar to our folder
-cp ~/databricks-spark-sql-perf/target/scala-2.12/spark-sql-perf_*.jar "$PROFILER_FOLDER"
-for i in `ls $PROFILER_FOLDER/spark-sql-perf_*.jar`; do sudo chmod +x $i;done
+make OS=LINUX
 
 ls -la $PROFILER_FOLDER

@@ -28,30 +28,34 @@ import com.databricks.spark.sql.perf.tpcds.TPCDSTables
 import org.apache.spark.sql._
 val sqlContext = new SQLContext(sc)
 
+// location of dsdgen
 // Note: you must use Databricks version that prints to stdout (see above)
 val dsdgenDir="/opt/profiler/databricks-tpcds-kit/tools"
-val scaleFactor="1"
-val tables = new TPCDSTables(sqlContext,
-    dsdgenDir = dsdgenDir, // location of dsdgen
-    scaleFactor = scaleFactor,
-    useDoubleForDecimal = false, // true to replace DecimalType with DoubleType
-    useStringForDate = false) // true to replace DateType with StringType
+val scaleFactor="10"
+// true to replace DecimalType with DoubleType
+val useDoubleForDecimal=false
+// true to replace DateType with StringType
+val useStringForDate = false
 
-val dataGenDir="~/tpc-ds-data-1"
-val tableFilter="catalog_sales"
+val tables = new TPCDSTables(sqlContext, dsdgenDir = dsdgenDir, scaleFactor = scaleFactor, useDoubleForDecimal = useDoubleForDecimal, useStringForDate = useStringForDate) 
+
+val dataGenDir="s3a://eyalzo-tpcds/tpcds-data-10g"
 val format="parquet"
-val numPartitions=1
+// create the partitioned fact tables
 val partitionTables=false
+// shuffle to get partitions coalesced into single files.
 val clusterByPartitionColumns=false
-tables.genData(
-    location = dataGenDir,
-    format = format,
-    overwrite = true, // overwrite the data that is already there
-    partitionTables = partitionTables, // create the partitioned fact tables 
-    clusterByPartitionColumns = clusterByPartitionColumns, // shuffle to get partitions coalesced into single files. 
-    filterOutNullPartitionValues = false, // true to filter out the partition with NULL key value
-    tableFilter = tableFilter, // "" means generate all tables
-    numPartitions = numPartitions) // how many dsdgen partitions to run - number of input tasks.
+// true to filter out the partition with NULL key value
+val filterOutNullPartitionValues = false
+// "" means generate all tables
+val tableFilter="catalog_sales"
+// how many dsdgen partitions to run - number of input tasks.
+val numPartitions=10
+
+// Generate the data (may take a long time)
+tables.genData( location = dataGenDir, format = format, overwrite = true, partitionTables = partitionTables, clusterByPartitionColumns = clusterByPartitionColumns, filterOutNullPartitionValues = filterOutNullPartitionValues, tableFilter = tableFilter, numPartitions = numPartitions) 
+
+
 
 ```
 
