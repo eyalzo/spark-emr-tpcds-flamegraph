@@ -87,8 +87,10 @@ $ ls ~/databricks-tpcds-kit/tools/dsdgen
 ```
 
 Now, copy the full-path of dsdgen and use it below in the scala code.
-Run spark-shell with spark-sql-perf
-Must run with the correct jar from databricks, to match the scala version used in the shell. Otherwise, it may cause some errors when loading classes.
+
+##Run spark-shell with spark-sql-perf
+Must run with the correct jar from databricks, to match the scala version used in the shell. 
+Otherwise, it may cause some errors when loading classes.
 
 ```bash
 $ spark-shell --jars /home/ubuntu/databricks-spark-sql-perf/target/scala-2.12/spark-sql-perf_2.12-0.5.1-SNAPSHOT.jar

@@ -51,4 +51,16 @@ sudo yum -y install sbt
 git clone https://github.com/databricks/spark-sql-perf ~/databricks-spark-sql-perf
 cd ~/databricks-spark-sql-perf
 sudo sbt +package
-ls ~/databricks-spark-sql-perf/target/scala-2.12/*.jar
+
+# Get dsdgen
+# The original dsdgen (from the TPC-DS toolkit) does not work as expected (version 2.4+), because it does not print to stdout. Therefore, it is required to perform the following:
+git clone https://github.com/databricks/tpcds-kit.git ~/databricks-tpcds-kit
+cd ~/databricks-tpcds-kit/tools
+# You may need this on a brand new machine:
+# sudo apt install -y gcc make flex bison byacc
+make
+
+# Copy the runable files
+cp ~/databricks-spark-sql-perf/target/scala-2.12/*.jar "$PROFILER_FOLDER"
+cp ~/databricks-tpcds-kit/tools/dsdgen "$PROFILER_FOLDER"
+ls -la "$PROFILER_FOLDER"
