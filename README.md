@@ -40,18 +40,21 @@ echo "  password: admin" >> $PROFILER_CONFIG
 
 #Databricks SQL perf
 
-The official TPC-DS toolkit is an important complementary instrument to the detailed spec. Without it, it would have been impossible to perform comparable tests with today’s analytics tools. But it is still just a scalable data and queries generator, that ends with a collection of CSV files and basic SQL queries. From that point, it is not trivial to prepare a modern collection of data files, properly compressed and distributed, along with column names and runnable queries. Therefore, most people use ready toolkits that add scripts and wrappers to make the required preparations and/or run the queries. One of the most popular tools that help to run TPC-DS over Spark, is Databricks’s tool described here.
+The official TPC-DS toolkit is an important complementary instrument to the detailed spec. 
+Without it, it would have been impossible to perform comparable tests with today’s analytics tools. 
+The official toolkit is a scalable data and queries generator, that ends with a collection of CSV files and basic SQL queries. 
+From that point, it is not trivial to prepare a modern collection of data files, properly compressed and distributed, along with column names and runnable queries. 
+Therefore, most people use ready toolkits that add scripts and wrappers to make the required preparations and/or run the queries. 
+One of the most popular tools that help to run TPC-DS over Spark, is Databricks’s tool described here.
 
 ##Install SBT
 
-The following script ran on EC2 Ubuntu. An updated EMR version can be found in this project.
+The directions are in [SBT Install on Linux](https://www.scala-sbt.org/1.x/docs/Installing-sbt-on-Linux.html).
+An AMI compatible version is part of the [bootstrap script](cluster-bootstrap.sh).
+
+##Build spark-sql-perf (requires sbt)
 
 ```bash
-echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
-curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo apt-key add
-sudo apt-get update
-sudo apt-get install sbt
-Build spark-sql-perf (requires sbt)
 # If machine is a brand new Ubuntu, you may need to install Java first:
 # sudo apt install -y openjdk-11-jre-headless
 git clone https://github.com/databricks/spark-sql-perf ~/databricks-spark-sql-perf
@@ -64,8 +67,12 @@ The reason we build it is this:
 ```bash
 $ ls ~/databricks-spark-sql-perf/target/scala-2.12/*.jar
 /home/ubuntu/databricks-spark-sql-perf/target/scala-2.12/spark-sql-perf_2.12-0.5.1-SNAPSHOT.jar
-Build Databricks dsdgen
+```
+
+##Build Databricks dsdgen
 The original dsdgen (from the TPC-DS toolkit) does not work as expected (version 2.4+), because it does not print to stdout. Therefore, it is required to perform the following:
+
+```bash
 git clone https://github.com/databricks/tpcds-kit.git ~/databricks-tpcds-kit
 cd ~/databricks-tpcds-kit/tools
 # You may need this on a brand new machine:

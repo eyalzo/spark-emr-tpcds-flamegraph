@@ -1,3 +1,12 @@
+#!/bin/bash
+
+# Author: Eyal Zohar
+# Version: 2
+# Notes: Bootstrap logs are in "/mnt/var/log/bootstrap-actions/1/"
+
+PROFILER_FOLDER=/opt/profiler
+aws s3 cp s3://cluster-bootstrap/cluster-bootstrap.sh $PROFILER_FOLDER
+
 ### Install Uber JVM Profiler on EMR machines (AMI 2)
 
 # Install git and maven
@@ -11,7 +20,7 @@ cd jvm-profiler/
 mvn -P influxdb clean package
 
 # Copy to the profiler folder and set permissions
-sudo mkdir /opt/profiler
+sudo mkdir $PROFILER_FOLDER
 sudo cp target/jvm-profiler-1.0.0.jar /opt/profiler/.
 sudo chown hadoop:hadoop /opt/profiler/ -R
 chmod +x /opt/profiler/jvm-profiler-1.0.0.jar
@@ -19,13 +28,27 @@ chmod +x /opt/profiler/jvm-profiler-1.0.0.jar
 ### Prepare influxdb configuration
 
 # Change this to your influxdb host address
-INFLUX_HOST=18.196.147.58
+if [ -z "$INFLUX_HOST" ]; then
+  INFLUX_HOST=18.196.147.58;
+fi
 
 # Prepare the config file with default influxdb settings
-PROFILER_CONFIG="/opt/profiler/influxdb.yaml"
+PROFILER_CONFIG="$PROFILER_FOLDER/influxdb.yaml"
 echo "influxdb:" > $PROFILER_CONFIG
 echo "  host: ${INFLUX_HOST}" >> $PROFILER_CONFIG
 echo "  port: 8086" >> $PROFILER_CONFIG
 echo "  database: metrics" >> $PROFILER_CONFIG
 echo "  username: admin" >> $PROFILER_CONFIG
 echo "  password: admin" >> $PROFILER_CONFIG
+
+### Install Data Bricks TPC-DS Toolkit
+
+# Install SBT
+curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm.repo
+sudo yum -y install sbt
+
+# Build spark-sql-perf
+git clone https://github.com/databricks/spark-sql-perf ~/databricks-spark-sql-perf
+cd ~/databricks-spark-sql-perf
+sudo sbt +package
+ls ~/databricks-spark-sql-perf/target/scala-2.12/*.jar
