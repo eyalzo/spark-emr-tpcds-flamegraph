@@ -50,17 +50,21 @@ sudo yum -y install sbt
 # Build spark-sql-perf
 git clone https://github.com/databricks/spark-sql-perf ~/databricks-spark-sql-perf
 cd ~/databricks-spark-sql-perf
+# This one takes several minutes, so we might have to build it once and copy it here from s3 in the future
 sudo sbt +package
+# For a future "copy from s3 instead of build": aws s3 cp $PROFILER_FOLDER/spark-sql-perf_*.jar s3://cluster-bootstrap/
 
 # Get dsdgen
 # The original dsdgen (from the TPC-DS toolkit) does not work as expected (version 2.4+), because it does not print to stdout. Therefore, it is required to perform the following:
-git clone https://github.com/databricks/tpcds-kit.git ~/databricks-tpcds-kit
-cd ~/databricks-tpcds-kit/tools
-# You may need this on a brand new machine:
-# sudo apt install -y gcc make flex bison byacc
-make
+cd /opt/profiler
+sudo yum install -y gcc make flex bison byacc git
+git clone https://github.com/databricks/tpcds-kit.git databricks-tpcds-kit
+cd databricks-tpcds-kit/tools
+make clean
+make clean OS=LINUX
 
-# Copy the runable files
-cp ~/databricks-spark-sql-perf/target/scala-2.12/*.jar "$PROFILER_FOLDER"
-cp ~/databricks-tpcds-kit/tools/dsdgen "$PROFILER_FOLDER"
-ls -la "$PROFILER_FOLDER"
+# Copy the jar to our folder
+cp ~/databricks-spark-sql-perf/target/scala-2.12/spark-sql-perf_*.jar "$PROFILER_FOLDER"
+for i in `ls $PROFILER_FOLDER/spark-sql-perf_*.jar`; do sudo chmod +x $i;done
+
+ls -la $PROFILER_FOLDER
