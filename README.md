@@ -149,7 +149,7 @@ echo "  username: admin" >> $PROFILER_CONFIG
 echo "  password: admin" >> $PROFILER_CONFIG
 ```
 
-#Databricks SQL perf
+# Databricks SQL perf
 
 This is basically an FYI section, because an AMI compatible version of everything here is part of the [bootstrap script](cluster-bootstrap.sh).
 
@@ -160,11 +160,11 @@ From that point, it is not trivial to prepare a modern collection of data files,
 Therefore, most people use ready toolkits that add scripts and wrappers to make the required preparations and/or run the queries. 
 One of the most popular tools that help to run TPC-DS over Spark, is Databricks’s tool described here.
 
-##Install SBT
+## Install SBT
 
 The directions are in [SBT Install on Linux](https://www.scala-sbt.org/1.x/docs/Installing-sbt-on-Linux.html).
 
-##Build spark-sql-perf (requires sbt)
+## Build spark-sql-perf (requires sbt)
 
 ```bash
 # If machine is a brand new Ubuntu, you may need to install Java first:
@@ -177,7 +177,7 @@ sudo sbt +package
 cp ~/databricks-spark-sql-perf/target/scala-2.12/spark-sql-perf_2.12-*.jar /opt/profiler/.
 ```
 
-##Build Databricks dsdgen
+## Build Databricks dsdgen
 The original dsdgen (from the TPC-DS toolkit) does not work as expected (version 2.4+), because it does not print to stdout. Therefore, it is required to perform the following:
 
 ```bash
@@ -193,7 +193,7 @@ cp ~/databricks-tpcds-kit/tools/dsdgen /opt/profiler/dsdgen
 
 Now, copy the full-path of dsdgen and use it below in the scala code.
 
-##Run spark-shell with spark-sql-perf
+## Run spark-shell with spark-sql-perf
 Must run with the correct jar from databricks, to match the scala version used in the shell. 
 Otherwise, it may cause some errors when loading classes.
 
@@ -240,9 +240,9 @@ Create Parquet files
 val databaseName: String = "tpcds_1g"
 sql(s"create database $databaseName")
 tables.createExternalTables(dataGenDir, "parquet", databaseName, overwrite = true, discoverPartitions = true)
-```scala
+```
 
-##Databricks with S3
+## Databricks with S3
 ```scala
 spark-shell --jars /home/ubuntu/databricks-spark-sql-perf/target/scala-2.12/spark-sql-perf_2.12-0.5.1-SNAPSHOT.jar --conf spark.hadoop.fs.s3a.endpoint=s3.eu-central-1.amazonaws.com --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem --conf spark.executor.extraJavaOptions=-Dcom.amazonaws.services.s3.enableV4=true --conf spark.driver.extraJavaOptions=-Dcom.amazonaws.services.s3.enableV4=true --packages com.amazonaws:aws-java-sdk:1.7.4,org.apache.hadoop:hadoop-aws:2.7.3
 ```
