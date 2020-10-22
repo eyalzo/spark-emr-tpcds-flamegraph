@@ -19,6 +19,12 @@ spark-shell --jars /opt/profiler/spark-sql-perf_2.12-0.5.1-SNAPSHOT.jar \
 --conf "spark.executor.extraJavaOptions=-javaagent:${JVM_PROFILER_JAR}=reporter=com.uber.profiling.reporters.FileOutputReporter,outputDir=/tmp/profiler_output,tag=influxdb,metricInterval=5000,sampleInterval=5000,ioProfiling=true" 
 ```
 
+And after the run is complete, exit the shell (control-D) and copy the files somewhere.
+For example:
+```bash
+for i in `ls -d /tmp/profiler_output/*.json`; do aws s3 cp $i s3://eyalzo-tpcds/tpcds-profiling/20201021/gen-10g-5-exec-20-partitions-parquet-xlarge/executor/; done
+```
+
 ## Experiment
 The following example generates TPC-DS data.
 
@@ -31,7 +37,7 @@ val sqlContext = new SQLContext(sc)
 // location of dsdgen
 // Note: you must use Databricks version that prints to stdout (see above)
 val dsdgenDir="/opt/profiler/databricks-tpcds-kit/tools"
-val scaleFactor="10"
+val scaleFactor="100"
 // true to replace DecimalType with DoubleType
 val useDoubleForDecimal=false
 // true to replace DateType with StringType
@@ -39,7 +45,7 @@ val useStringForDate = false
 
 val tables = new TPCDSTables(sqlContext, dsdgenDir = dsdgenDir, scaleFactor = scaleFactor, useDoubleForDecimal = useDoubleForDecimal, useStringForDate = useStringForDate) 
 
-val dataGenDir="s3a://eyalzo-tpcds/tpcds-data-10g"
+val dataGenDir="s3a://eyalzo-tpcds/tpcds-data-100g"
 val format="parquet"
 // create the partitioned fact tables
 val partitionTables=false
@@ -48,15 +54,62 @@ val clusterByPartitionColumns=false
 // true to filter out the partition with NULL key value
 val filterOutNullPartitionValues = false
 // "" means generate all tables
-val tableFilter="catalog_sales"
+// For example: val tableFilter="catalog_sales"
+val tableFilter=""
 // how many dsdgen partitions to run - number of input tasks.
-val numPartitions=10
+val numPartitions=20
 
 // Generate the data (may take a long time)
 tables.genData( location = dataGenDir, format = format, overwrite = true, partitionTables = partitionTables, clusterByPartitionColumns = clusterByPartitionColumns, filterOutNullPartitionValues = filterOutNullPartitionValues, tableFilter = tableFilter, numPartitions = numPartitions) 
 
+```
 
+## Run queries
 
+```scala
+import com.databricks.spark.sql.perf.tpcds.TPCDSTables
+
+import org.apache.spark.sql._
+
+// location of dsdgen
+// Note: you must use Databricks version that prints to stdout (see above)
+val dsdgenDir="/opt/profiler/databricks-tpcds-kit/tools"
+val scaleFactor="100"
+
+val sqlContext = new SQLContext(sc)
+val tables = new TPCDSTables(sqlContext, dsdgenDir = dsdgenDir, scaleFactor = scaleFactor) 
+
+val dataGenDir="s3a://eyalzo-tpcds/tpcds-data-100g"
+val databaseName: String = "tpcds_100g"
+sql(s"create database $databaseName")
+// Create metastore tables in a specified database for your data.
+// Once tables are created, the current database will be switched to the specified database.
+// Note: update discoverPartitions if using partitions
+tables.createExternalTables(dataGenDir, "parquet", databaseName, overwrite = true, discoverPartitions = false)
+```
+
+Run the experiment (some vars repeat here):
+
+```scala
+//
+// The experiment itself
+//
+import com.databricks.spark.sql.perf.tpcds.TPCDS
+import org.apache.spark.sql._
+
+val sqlContext = new SQLContext(sc)
+val tpcds = new TPCDS (sqlContext = sqlContext)
+
+val dataGenDir="s3a://eyalzo-tpcds/tpcds-data-100g"
+val resultLocation = dataGenDir + "/query_results"
+val iterations = 1 // how many iterations of queries to run.
+val queries = tpcds.tpcds2_4Queries // queries to run.
+val timeout = 24*60*60 // timeout, in seconds.
+// Run:
+val databaseName: String = "tpcds_100g"
+sql(s"use $databaseName")
+//val experiment = tpcds.runExperiment(queries, iterations = iterations, resultLocation = resultLocation, forkThread = true)
+val experiment = tpcds.runExperiment(queries, iterations = iterations, resultLocation = resultLocation)
 ```
 
 # Installations on the Driver and Exectuors
