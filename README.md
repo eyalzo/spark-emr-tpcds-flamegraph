@@ -1,3 +1,41 @@
+# Installing the Monitor
+
+## Install Influxdb
+
+```bash
+wget -qO- https://repos.influxdata.com/influxdb.key | sudo apt-key add -
+source /etc/lsb-release
+echo "deb https://repos.influxdata.com/${DISTRIB_ID,,} ${DISTRIB_CODENAME} stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
+sudo apt-get update && sudo apt-get install influxdb
+sudo systemctl unmask influxdb.service
+sudo systemctl start influxdb
+```
+
+The service looks like this:
+
+```commandline
+/system.slice/influxdb.service
+             └─ /usr/bin/influxd -config /etc/influxdb/influxdb.conf
+```
+
+### Prepare influxdb database 'metrics'
+
+Before first run, we need to preapre the database that will hold the metrics:
+
+```bash
+$ sudo influx
+Connected to http://localhost:8086 version 1.8.3
+InfluxDB shell version: 1.8.3
+> CREATE DATABASE metrics
+> use metrics
+Using database metrics
+> CREATE USER admin WITH PASSWORD 'admin' WITH ALL PRIVILEGES
+> show users
+user  admin
+----  -----
+admin true
+```
+
 # Running experiments
 
 Running TPC-DS experiment on AWS EMR and analyze it with FlameGraph.

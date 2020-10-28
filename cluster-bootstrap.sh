@@ -7,7 +7,7 @@
 # Where to put all apps and config files that are later used by driver and/or executors
 PROFILER_FOLDER=/opt/profiler
 # The target influxdb host address
-INFLUX_HOST=18.196.147.58;
+INFLUX_HOST=influxdb.eyalzo.com
 
 # Get Arguments
 while [ $# -gt 0 ]
@@ -18,7 +18,7 @@ do
     -i|--influx-host)
       shift; INFLUX_HOST=$1; shift;;
     -*)
-      echo "Unrecognized option: $1"; exit 0;;
+      echo "Unrecognized option: $1";;
     *)
       break;
       ;;
@@ -36,6 +36,7 @@ sudo yum -y install git-core
 sudo yum -y install maven
 # Install htop that shows each core's effort
 sudo yum -y install htop
+sudo yum -y install collectd
 
 # Clone the profiler and build it
 git clone https://github.com/uber-common/jvm-profiler.git
