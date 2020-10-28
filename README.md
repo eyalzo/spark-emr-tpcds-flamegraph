@@ -1,5 +1,31 @@
 # Installing the Monitor
 
+This project contains instructions for sending metrics from two sources to influxdb/grafana:
+* JVM profiler
+* collectd
+
+## Install Grafana
+
+```bash
+sudo apt-get install -y apt-transport-https
+sudo apt-get install -y software-properties-common wget
+wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
+echo "deb https://packages.grafana.com/oss/deb stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
+sudo apt-get update
+sudo apt-get install -y grafana
+
+sudo update-rc.d grafana-server defaults 
+sudo systemctl start grafana-server.service 
+sudo systemctl status grafana-server.service
+```
+
+### Grafana config
+
+Login and set password
+Go to http://18.196.147.58:3000 and login using admin\admin and “change” password to “admin”.
+To enable anonymous login, change one entry in /etc/grafana/grafana.ini and restart.
+The dashboard is found here: (https://github.com/baghelamit/spark-influxdb-grafana/blob/master/Spark-InfluxDB-Grafana.json)
+
 ## Install Influxdb
 
 ```bash
@@ -18,7 +44,7 @@ The service looks like this:
              └─ /usr/bin/influxd -config /etc/influxdb/influxdb.conf
 ```
 
-### Prepare influxdb database 'metrics'
+### Prepare influxdb database 'metrics' for JVM profiler
 
 Before first run, we need to preapre the database that will hold the metrics:
 
@@ -34,6 +60,54 @@ Using database metrics
 user  admin
 ----  -----
 admin true
+```
+
+### Config influxdb to accept collectd data
+
+Taken from (https://docs.influxdata.com/influxdb/v1.8/supported_protocols/collectd/).
+In the influxdb machine:
+
+```bash
+# Do this, or install collectd
+sudo mkdir -p /usr/share/collectd
+sudo wget https://raw.githubusercontent.com/collectd/collectd/master/src/types.db -O /usr/share/collectd/types.db
+# Fix config
+sudo sed -i '/^\[\[collectd\]\]$/,/^\[/ s/^  # enabled = false/enabled = true/' /etc/influxdb/influxdb.conf
+# Stop and start, because restart does not work well
+sudo systemctl stop influxdb; sleep 2; sudo systemctl start influxdb; sudo systemctl status influxdb
+```
+
+If something goes wrong, you can check here why:
+```bash
+sudo journalctl -u influxdb.service --no-pager|tail -n 100
+```
+
+In each reporting collectd machine. Assuming collectd was installed with Amazon AMI tools `sudo amazon-linux-extras install -y collectd`.
+
+```bash
+sudo sed -i 's/#LoadPlugin network/LoadPlugin network\n<Plugin network>\n  Server "influxdb.eyalzo.com" "25826"\n<\/Plugin>/g' /etc/collectd.conf
+# Stop and start, because restart does not work well
+sudo systemctl reload collectd
+```
+
+To test at the client side (collectd):
+
+```bash
+sudo tcpdump -p -n dst port 25826
+```
+
+### Install chronograf to browse influxdb
+
+On the same machine as the influxdb:
+
+```bash
+# Install netstat
+sudo apt-get install -y net-tools
+# Install Chornograf
+wget https://dl.influxdata.com/chronograf/releases/chronograf_1.8.7_amd64.deb
+sudo dpkg -i chronograf_1.8.7_amd64.deb
+sudo netstat -ltpn|grep 8888
+# Expected results 0 :::8888                 :::*                    LISTEN      427/chronograf 
 ```
 
 # Running experiments

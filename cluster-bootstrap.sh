@@ -36,7 +36,12 @@ sudo yum -y install git-core
 sudo yum -y install maven
 # Install htop that shows each core's effort
 sudo yum -y install htop
-sudo yum -y install collectd
+
+# Learn more at https://aws.amazon.com/amazon-linux-2/faqs/#Amazon_Linux_Extras
+sudo amazon-linux-extras install -y collectd
+# Note the tricky use of variable - use the " around variable so it will be converted, surround with ' and then " to be printed
+sudo sed -i 's/#LoadPlugin network/LoadPlugin network\n<Plugin network>\n  Server "'"$INFLUX_HOST"'" "25826"\n<\/Plugin>/g' /etc/collectd.conf
+sudo systemctl restart collectd
 
 # Clone the profiler and build it
 git clone https://github.com/uber-common/jvm-profiler.git
