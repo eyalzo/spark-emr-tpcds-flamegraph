@@ -1,11 +1,32 @@
 #!/bin/bash
 
 # Author: Eyal Zohar
-# Version: 2
+# Version: 3
 # Notes: Bootstrap logs are in "/mnt/var/log/bootstrap-actions/1/"
 
+# Where to put all apps and config files that are later used by driver and/or executors
 PROFILER_FOLDER=/opt/profiler
-sudo mkdir $PROFILER_FOLDER
+# The target influxdb host address
+INFLUX_HOST=18.196.147.58;
+
+# Get Arguments
+while [ $# -gt 0 ]
+do
+  case "$1" in
+    -d|--profiler-folder)
+      shift; PROFILER_FOLDER=$1; shift;;
+    -i|--influx-host)
+      shift; INFLUX_HOST=$1; shift;;
+    -*)
+      echo "Unrecognized option: $1"; exit 0;;
+    *)
+      break;
+      ;;
+  esac
+  shift
+done
+
+sudo mkdir -p $PROFILER_FOLDER
 aws s3 cp s3://cluster-bootstrap/cluster-bootstrap.sh $PROFILER_FOLDER
 
 ### Install Uber JVM Profiler on EMR machines (AMI 2)
@@ -28,11 +49,6 @@ sudo chown hadoop:hadoop /opt/profiler/ -R
 chmod +x /opt/profiler/jvm-profiler-1.0.0.jar
 
 ### Prepare influxdb configuration
-
-# Change this to your influxdb host address
-if [ -z "$INFLUX_HOST" ]; then
-  INFLUX_HOST=18.196.147.58;
-fi
 
 # Prepare the config file with default influxdb settings
 PROFILER_CONFIG="$PROFILER_FOLDER/influxdb.yaml"
