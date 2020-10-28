@@ -8,7 +8,7 @@ After that, you can run spark from the driver with TPC-DS support:
 spark-shell --jars /opt/profiler/spark-sql-perf_2.12-0.5.1-SNAPSHOT.jar
 ```
 
-To add FlameGraph, use something like this:
+To add FlameGraph you need to save StackTrace.json to local file:
 
 ```bash
 JVM_PROFILER_JAR="/opt/profiler/jvm-profiler-1.0.0.jar"
@@ -17,6 +17,19 @@ spark-shell --jars /opt/profiler/spark-sql-perf_2.12-0.5.1-SNAPSHOT.jar \
 --conf "spark.jars=${JVM_PROFILER_JAR}" \
 --conf "spark.driver.extraJavaOptions=-javaagent:${JVM_PROFILER_JAR}=reporter=com.uber.profiling.reporters.FileOutputReporter,outputDir=/tmp/profiler_output,metricInterval=5000,sampleInterval=5000,ioProfiling=true" \
 --conf "spark.executor.extraJavaOptions=-javaagent:${JVM_PROFILER_JAR}=reporter=com.uber.profiling.reporters.FileOutputReporter,outputDir=/tmp/profiler_output,tag=influxdb,metricInterval=5000,sampleInterval=5000,ioProfiling=true" 
+```
+
+Alternatively, to save metrics to centralized influxdb/grafana, set a config file (see below) and do the following.
+In this example the StackTrace is turned off by setting `sampleInterval` to zero, and metrics sampling rate is set to 1 second.
+
+```bash
+PROFILER_CONFIG="/opt/profiler/influxdb.yaml"
+JVM_PROFILER_JAR="/opt/profiler/jvm-profiler-1.0.0.jar"
+
+spark-shell --jars /opt/profiler/spark-sql-perf_2.12-0.5.1-SNAPSHOT.jar \
+--conf "spark.jars=${JVM_PROFILER_JAR}" \
+--conf "spark.driver.extraJavaOptions=-javaagent:${JVM_PROFILER_JAR}=reporter=com.uber.profiling.reporters.InfluxDBOutputReporter,tag=driver,configProvider=com.uber.profiling.YamlConfigProvider,configFile=${PROFILER_CONFIG},metricInterval=1000,sampleInterval=0,ioProfiling=true" \
+--conf "spark.executor.extraJavaOptions=-javaagent:${JVM_PROFILER_JAR}=reporter=com.uber.profiling.reporters.InfluxDBOutputReporter,tag=executor,configProvider=com.uber.profiling.YamlConfigProvider,configFile=${PROFILER_CONFIG},metricInterval=1000,sampleInterval=0,ioProfiling=true"
 ```
 
 And after the run is complete, exit the shell (control-D) and copy the files somewhere.
@@ -66,6 +79,8 @@ tables.genData( location = dataGenDir, format = format, overwrite = true, partit
 
 ## Run queries
 
+To run queries on existing generated data files, you need to prepare this first: 
+
 ```scala
 import com.databricks.spark.sql.perf.tpcds.TPCDSTables
 
@@ -74,13 +89,13 @@ import org.apache.spark.sql._
 // location of dsdgen
 // Note: you must use Databricks version that prints to stdout (see above)
 val dsdgenDir="/opt/profiler/databricks-tpcds-kit/tools"
-val scaleFactor="100"
+val scaleFactor="1000"
 
 val sqlContext = new SQLContext(sc)
 val tables = new TPCDSTables(sqlContext, dsdgenDir = dsdgenDir, scaleFactor = scaleFactor) 
 
-val dataGenDir="s3a://eyalzo-tpcds/tpcds-data-100g"
-val databaseName: String = "tpcds_100g"
+val dataGenDir="s3a://eyalzo-tpcds/tpcds-data-1000g"
+val databaseName: String = "tpcds_1000g"
 sql(s"create database $databaseName")
 // Create metastore tables in a specified database for your data.
 // Once tables are created, the current database will be switched to the specified database.

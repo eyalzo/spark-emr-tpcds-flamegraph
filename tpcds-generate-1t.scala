@@ -34,7 +34,7 @@ val numPartitions=200
 // Generate the data (may take a long time)
 tables.genData( location = dataGenDir, format = format, overwrite = true, partitionTables = partitionTables, clusterByPartitionColumns = clusterByPartitionColumns, filterOutNullPartitionValues = filterOutNullPartitionValues, tableFilter = tableFilter, numPartitions = numPartitions)
 
-val databaseName: String = "tpcds_100g"
+val databaseName: String = "tpcds_1000g"
 sql(s"create database $databaseName")
 // Create metastore tables in a specified database for your data.
 // Once tables are created, the current database will be switched to the specified database.
