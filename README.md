@@ -22,7 +22,7 @@ sudo systemctl status grafana-server.service
 ### Grafana config
 
 Login and set password
-Go to http://18.196.147.58:3000 and login using admin\admin and “change” password to “admin”.
+Go to port 3000 and login using admin\admin and “change” password to “admin”.
 To enable anonymous login, change one entry in /etc/grafana/grafana.ini and restart.
 The dashboard is found here: (https://github.com/baghelamit/spark-influxdb-grafana/blob/master/Spark-InfluxDB-Grafana.json)
 

@@ -41,6 +41,10 @@ sudo yum -y install htop
 sudo amazon-linux-extras install -y collectd
 # Note the tricky use of variable - use the " around variable so it will be converted, surround with ' and then " to be printed
 sudo sed -i 's/#LoadPlugin network/LoadPlugin network\n<Plugin network>\n  Server "'"$INFLUX_HOST"'" "25826"\n<\/Plugin>/g' /etc/collectd.conf
+sudo sed -i 's/#LoadPlugin disk/LoadPlugin disk/g' /etc/collectd.conf
+sudo sed -i 's/#LoadPlugin df/LoadPlugin df/g' /etc/collectd.conf
+sudo sed -i 's/#LoadPlugin uptime/LoadPlugin uptime/g' /etc/collectd.conf
+sudo sed -i 's/#LoadPlugin tcpconns/LoadPlugin tcpconns/g' /etc/collectd.conf
 sudo systemctl restart collectd
 
 # Clone the profiler and build it
