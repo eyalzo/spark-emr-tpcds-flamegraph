@@ -41,12 +41,15 @@ sudo yum -y install htop
 sudo amazon-linux-extras install -y collectd
 # Note the tricky use of variable - use the " around variable so it will be converted, surround with ' and then " to be printed
 sudo sed -i 's/#LoadPlugin network/LoadPlugin network\n<Plugin network>\n  Server "'"$INFLUX_HOST"'" "25826"\n<\/Plugin>/g' /etc/collectd.conf
-sudo sed -i 's/#LoadPlugin aggregation/LoadPlugin aggregation\n<Plugin aggregation>\n  <Aggregation>\n    Plugin "cpu"\n    Type "cpu"\n    GroupBy "Host"\n    GroupBy "TypeInstance"\n    CalculateAverage true\n  <\/Aggregation>\n<\/Plugin>/g' /etc/collectd.conf
+# Aggregation is no longer required because "cpu" has a "ReportByCpu false" option
+#sudo sed -i 's/#LoadPlugin aggregation/LoadPlugin aggregation\n<Plugin aggregation>\n  <Aggregation>\n    Plugin "cpu"\n    Type "cpu"\n    GroupBy "Host"\n    GroupBy "TypeInstance"\n    CalculateAverage true\n  <\/Aggregation>\n<\/Plugin>/g' /etc/collectd.conf
+sudo sed -i 's/#<Plugin cpu>/<Plugin cpu>\n  ReportByCpu false\n  ReportByState true\n<\/Plugin>/g' /etc/collectd.conf
 sudo sed -i 's/#LoadPlugin disk/LoadPlugin disk/g' /etc/collectd.conf
+#sudo sed -i 's/#LoadPlugin df/LoadPlugin df\n<Plugin df>\n  MountPoint "\/mnt\/hdfs"\n<\/Plugin>/g' /etc/collectd.conf
 sudo sed -i 's/#LoadPlugin df/LoadPlugin df/g' /etc/collectd.conf
 sudo sed -i 's/#LoadPlugin uptime/LoadPlugin uptime/g' /etc/collectd.conf
 sudo sed -i 's/#LoadPlugin tcpconns/LoadPlugin tcpconns\n<Plugin "tcpconns">\n  AllPortsSummary true\n<\/Plugin>/g' /etc/collectd.conf
-sudo sed -i 's/#Interval     10/Interval     5/g' /etc/collectd.conf
+sudo sed -i 's/#Interval     10/Interval     1/g' /etc/collectd.conf
 sudo systemctl restart collectd
 
 # Clone the profiler and build it
